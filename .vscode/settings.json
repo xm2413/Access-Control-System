@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "string": "cpp",
+        "windows.h": "c",
+        "admin.h": "c"
+    }
+}
