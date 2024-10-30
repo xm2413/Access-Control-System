@@ -9,6 +9,8 @@
 const char *DatafilePath = "../Sav/Data.sav";
 const char *AdminfilePath = "../Sav/Admin.sav";
 const char *RecordfilePath = "../Sav/Record.sav";
+char timeStr[15]; // 用于存储格式化后的时间字符串
+
 char admin[MAXLEN],password[MAXLEN];
 char inputAdmin[MAXLEN],inputPassword[MAXLEN];
 /***********卡存储结构**********/
@@ -49,8 +51,29 @@ void Save();
 void AddData(char *numbe, char *doo, char *perso,char *pas);
 void Deletedata();
 void ShowRecord();
-void MainPage();
+void ListPage();
+char* GetTime() {
+	time_t rawtime;
+	struct tm * timeinfo;
 
+	// 获取当前时间
+	time(&rawtime);
+	// 转换为本地时间
+	timeinfo = localtime(&rawtime);
+
+	// 格式化输出为数字形式：YYYYMMDDHHMMSS
+	snprintf(timeStr, sizeof(timeStr), "%04d%02d%02d%02d%02d%02d",
+	         timeinfo->tm_year + 1900, // 年份
+	         timeinfo->tm_mon + 1,     // 月份（从0开始，所以需要加1）
+	         timeinfo->tm_mday,        // 日期
+	         timeinfo->tm_hour,        // 小时
+	         timeinfo->tm_min,         // 分钟
+	         timeinfo->tm_sec);        // 秒
+
+	// 输出字符数组中的内容
+
+	return timeStr;
+}
 bool AdminCheck() {//管理员认证
 	bool ch1=strcmp(admin,inputAdmin);
 	bool ch2=strcmp(password,inputPassword);
@@ -129,7 +152,7 @@ void ControlPage() {
 		if (c == 13 || c == ' ') {
 			if (index == 0) AddPage();
 			if (index == 1) DeletePage();
-			if (index == 2) MainPage();
+			if (index == 2) ListPage();
 			if (index == 3) Display();
 		}
 	}
@@ -140,60 +163,40 @@ void ControlPage() {
 /***********管理员功能实现*********/
 
 void Save() {
-	FILE *pf = fopen("Data.sav", "w");
+	FILE *pf = fopen(DatafilePath, "w");
 	fprintf(pf, "%d\n", cnt);
 	for (int i = 0; i < cnt; i++) {
 		fprintf(pf, "%s %s %s %s\n", cardLst[i].number, cardLst[i].door, cardLst[i].person,cardLst[i].pass);
 	}
+	printf("保存成功,当前卡数量为%d\n",cnt);
 }
-void MainPage(){
-	system("cls"); 
+void ListPage() {
+	system("cls");
 	printf("###########################\n");
 	printf("###      门卡总览     ###\n");
 	printf("###########################\n");
-	
-	for(int i = 0; i < cnt; i++){
+
+	for (int i = 0; i < cnt; i++) {
 		printf("条目：%d\n卡号：%s\n门牌：%s\n办卡人：%s\n", i + 1, cardLst[i].number, cardLst[i].door, cardLst[i].person);
 		printf("###########################\n");
 	}
-	if(cnt == 0){
+	if (cnt == 0) {
 		printf("通讯录为空\n");
 	}
-	
+
 	printf("按下任意键继续......\n");
 	getch();
 }
 void AddPage() {
-	char timeStr[15];
-
-	//获取系统时间
-
-	time_t rawtime;
-	struct tm * timeinfo;
-
-	// 获取当前时间
-	time(&rawtime);
-	// 转换为本地时间
-	timeinfo = localtime(&rawtime);
-
-	// 格式化输出为数字形式：YYYYMMDDHHMMSS
-	snprintf(timeStr, sizeof(timeStr), "%04d%02d%02d%02d%02d%02d",
-	         timeinfo->tm_year + 1900, // 年份
-	         timeinfo->tm_mon + 1,     // 月份（从0开始，所以需要加1）
-	         timeinfo->tm_mday,        // 日期
-	         timeinfo->tm_hour,        // 小时
-	         timeinfo->tm_min,         // 分钟
-	         timeinfo->tm_sec);        // 秒
-
-	// 输出字符数组中的内容
 
 	system("cls");
 	printf("###########################\n");
 	printf("###       新增门卡      ###\n");
 	printf("###########################\n");
 	char number[MAXLEN];
-	printf("请输入卡号");
-	scanf("%s", number);
+	/*printf("请输入卡号");
+	scanf("%s", number);*/
+	GetTime();
 	char door[MAXLEN];
 	printf("请输入门牌");
 	scanf("%s", door);
@@ -203,7 +206,7 @@ void AddPage() {
 	char pass[MAXLEN];
 	printf("请输入密码");
 	scanf("%s", pass);
-	AddData(number,door,person,pass);
+	AddData(timeStr,door,person,pass);
 
 	ResortData();
 	Save();
@@ -340,21 +343,28 @@ void Display() { //主菜单
 
 void Load() { //加载
 	FILE *pfAdmin = fopen(AdminfilePath, "a+");
+	FILE *pfData = fopen(DatafilePath, "a+");
+
 	fscanf(pfAdmin,"%s",admin);
 	fscanf(pfAdmin,"%s",password);
 	printf("ad:%s\nps:%s\n",admin,password);
 
 	//FILE *pfRecord = fopen(RecordfilePath,"a+");
-	//FILE *pfData = fopen(DatafilePath,"r+");
-	time_t rawtime;
-	struct tm * timeinfo;
-
-	time(&rawtime); // 获取当前时间
-	timeinfo = localtime(&rawtime); // 转换为本地时间
-
-	printf("Current local time and date: %s", asctime(timeinfo));
+	if (pfData != NULL) {
+		int n;
+		fscanf(pfData, "%d", &n);
+		for (int i = 0; i < n; i++) {
+			char number[MAXLEN];
+			char door[MAXLEN];
+			char person[MAXLEN];
+			char pass[MAXLEN];
+			fscanf(pfData, "%s %s %s %s", number, door, person,pass);
+			//printf("%s %s %s %s", number, door, person,pass);
+			AddData(number,door,person,pass);
+		}
+	}
+	else printf("找不到data\n");
 	getch();
-
 }
 void Update() {
 	Load();
