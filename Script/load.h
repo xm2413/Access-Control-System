@@ -2,7 +2,6 @@
 #define LOAD_H
 
 
-void Load();//МгдиЪ§Он
 
 
 

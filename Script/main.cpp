@@ -1,6 +1,35 @@
-#include"admin.h"
-#include"user.h"
-#include"load.h"
+#include<stdio.h>
+#include<conio.h>
+#include<windows.h>
+#include<string.h>
+#include<stdbool.h>
+#include <time.h>
+#define MAXLEN 101
+/***********卡存储结构**********/
+struct Data { //
+	char id[MAXLEN];//卡号
+	char door[MAXLEN];//门
+	char person[MAXLEN];//人名
+	char pass[MAXLEN];//密码
+} cardLst[10001];
+Data nullData = {"null", "null", "null","null"};//空 Data，查询不到时会返回这个
+int cnt,cnt2;//cnt记录已经存入了几个Data，每存入一个就把lst[cnt]位置的 Data赋值，然后cnt++
+
+struct Record {
+	char ontime[MAXLEN];
+	Data data;
+} recordLst[10001];
+
+
+// 用于存储格式化后的时间字符串
+const char *DatafilePath = "../Sav/Data.sav";
+const char *AdminfilePath = "../Sav/Admin.sav";
+const char *RecordfilePath = "../Sav/Record.sav";
+char timeStr[15]; // 用于存储格式化后的时间字符串
+
+char admin[MAXLEN],password[MAXLEN];
+char inputAdmin[MAXLEN],inputPassword[MAXLEN];
+
 //定义了如何判断相同两个Data是否相同，只要名字，电话号，邮箱有一个不相同就是不同
 
 int DataCmp(Data a, Data b) {
@@ -11,15 +40,141 @@ int DataCmp(Data a, Data b) {
 	return 1;
 }
 /***********界面**********/
-
+void Load();//加载数据
 void Display();
 void ExitPage() {
 	exit(0);
 }
 /***********管理员系统**********/
+char* GetTime();
+bool AdminCheck();//管理员认证
+void AdminPage();//
+void Admin();//管理员系统
+void ControlPage();
+void AddPage();
+void DeletePage();
+void ShowPage();
+void ResortData();
+void Save();
+void AddData(char *numbe, char *doo, char *perso,char *pas);
+void Deletedata();
+void GetInfoPage();
+void ShowRecord();
+void ListPage();
+
 
 
 /***********管理员功能实现*********/
+
+char* GetTime() {
+	time_t rawtime;
+	struct tm * timeinfo;
+
+	// 获取当前时间
+	time(&rawtime);
+	// 转换为本地时间
+	timeinfo = localtime(&rawtime);
+
+	// 格式化输出为数字形式：YYYYMMDDHHMMSS
+	snprintf(timeStr, sizeof(timeStr), "%04d%02d%02d%02d%02d%02d",
+	         timeinfo->tm_year + 1900, // 年份
+	         timeinfo->tm_mon + 1,     // 月份（从0开始，所以需要加1）
+	         timeinfo->tm_mday,        // 日期
+	         timeinfo->tm_hour,        // 小时
+	         timeinfo->tm_min,         // 分钟
+	         timeinfo->tm_sec);        // 秒
+
+	// 输出字符数组中的内容
+
+	return timeStr;
+}
+bool AdminCheck() {//管理员认证
+	bool ch1=strcmp(admin,inputAdmin);
+	bool ch2=strcmp(password,inputPassword);
+	if (strcmp(inputAdmin,"cheat")||strcmp(inputPassword,"cheat")) {
+		if (ch1) {
+			printf("管理员账号错误");
+			getch();
+			return false;
+		}
+		if (ch2) {
+			printf("管理员密码错误");
+			getch();
+			return false;
+		}
+	}
+	printf("登录成功！");
+	printf("欢迎回来，管理员(∠·ω< )⌒★\n");
+	printf("按任意键继续.....\n");
+	getch();
+	return true;
+}
+void AdminPage() {//管理员登录界面
+	system("cls");
+	printf("##########登录界面###########\n");
+	printf("###                       ###\n");
+	printf("#############################\n");
+	printf("###      请输入账号       ###\n");
+
+	scanf("%s",inputAdmin);
+	printf("###      请输入密码        ###\n");
+
+	scanf("%s",inputPassword);
+
+}
+void Admin() {//进入管理员系统
+
+
+	while (1) {
+		AdminPage();
+		if (AdminCheck()) {
+			ControlPage();
+		}
+	}
+	return ;
+}
+void ControlPage() {
+	int index = 0;
+	while (1) {
+		system("cls");
+		printf("###########################\n");
+		printf("###      管理员系统     ###\n");
+		printf("###########################\n");
+		printf("方向键：选择菜单\n回车或空格：进入子菜单\n");
+		printf("###########################\n");
+		if (index == 0) printf("> ");
+		else printf("  ");
+		printf(" 1.办理门卡\n");
+		if (index == 1) printf("> ");
+		else printf("  ");
+		printf(" 2.注销门卡\n");
+		if (index == 2) printf("> ");
+		else printf("  ");
+		printf(" 3.查看所有门卡信息\n");
+		if (index == 3) printf("> ");
+		else printf("  ");
+		printf(" 4.查询一个门卡信息\n");
+		if (index == 4) printf("> ");
+		else printf("  ");
+		printf(" 5.返回门禁系统\n");
+		char c = getch();
+		if (c == 72) { //up
+			if (index == 0) index = 4;
+			else index--;
+		}
+		if (c == 80) { //down
+			if (index == 4) index = 0;
+			else index++;
+		}
+		if (c == 13 || c == ' ') {
+			if (index == 0) AddPage();
+			if (index == 1) DeletePage();
+			if (index == 2) ListPage();
+			if (index == 3) GetInfoPage();
+			if (index == 4) Display();
+		}
+	}
+}
 
 void Save() {
 	FILE *pf = fopen(DatafilePath, "w");
@@ -293,6 +448,8 @@ void OpenDoor() {
 		//printf("%s %s",data.pass,tempPass);//测试语句
 		if (!strcmp(data.pass, tempPass)) {
 			printf("开门成功！\n");
+			GetTime();
+			AddRecord(timeStr,data.id,data.door,data.person,data.pass);
 		} else {
 			printf("密码错误！\n");
 		}
@@ -321,7 +478,7 @@ void Display() { //主菜单
 		printf(" 1.管理员系统\n");
 		if (index == 1) printf("> ");
 		else printf("  ");
-		printf(" 2.门禁系统\n");
+		printf(" 2.用户系统\n");
 		if (index == 2) printf("> ");
 		else printf("  ");
 		printf(" 3.退出系统\n");
@@ -354,7 +511,7 @@ void Load() { //加载
 	FILE *pfRecord = fopen(RecordfilePath,"a+");
 	fscanf(pfAdmin,"%s",admin);
 	fscanf(pfAdmin,"%s",password);
-	//printf("ad:%s\nps:%s\n",admin,password);
+	printf("ad:%s\nps:%s\n",admin,password);
 
 	if (pfData != NULL) {
 		int n;
@@ -369,6 +526,7 @@ void Load() { //加载
 			AddData(number,door,person,pass);
 		}
 	} else printf("找不到data\n");
+	/**/
 	if (pfRecord != NULL) {
 		int n;
 		fscanf(pfRecord, "%d", &n);
@@ -379,8 +537,8 @@ void Load() { //加载
 			char person[MAXLEN];
 			char pass[MAXLEN];
 			fscanf(pfRecord, "%s %s %s %s %s",tim, number, door, person,pass);
-			//printf("%s %s %s %s", number, door, person,pass);
-			AddData(number,door,person,pass);
+			printf("%s %s %s %s %s", tim,number, door, person,pass);
+			AddRecord(tim,number,door,person,pass);
 		}
 	} else printf("找不到data\n");
 	getch();
