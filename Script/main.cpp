@@ -485,12 +485,7 @@ void GetInfoPage() {
 	printf("按下任意键继续......\n");
 	getch();
 }
-void ShowRecord() {
 
-}
-void DeletePage() {
-
-}
 //重新排序整个列表
 void ResortData() {
 	for (int i = 0; i < cnt - 1; i++) {
